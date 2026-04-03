@@ -21,7 +21,7 @@
         line-height: 1.5;
         padding: 5px 8px;
         border-radius: 4px;
-        pointer-events: none;
+        pointer-events: auto;
         z-index: 2147483647;
         box-sizing: border-box;
         max-width: 260px;
@@ -44,12 +44,37 @@
         color: #6b7280;
         font-style: italic;
       }
+      .${OVERLAY_CLASS} .iil-copyable {
+        cursor: pointer;
+        border-bottom: 1px dashed rgba(147,197,253,0.5);
+        transition: color 0.15s;
+      }
+      .${OVERLAY_CLASS} .iil-copyable:hover {
+        color: #93c5fd;
+      }
+      .${OVERLAY_CLASS} .iil-copied {
+        color: #4ade80 !important;
+        border-bottom-color: #4ade80;
+      }
+      .${OVERLAY_CLASS} .iil-copy-hint {
+        font-size: 9px;
+        color: rgba(147,197,253,0.6);
+        margin-left: 2px;
+      }
     `;
     document.head.appendChild(style);
   }
 
   function removeStyles() {
     document.getElementById(STYLE_ID)?.remove();
+  }
+
+  function escapeHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function escapeAttr(str) {
+    return str.replace(/"/g, '&quot;');
   }
 
   function getFilename(url) {
@@ -73,7 +98,7 @@
 
   function row(label, val, empty) {
     const valClass = empty ? 'iil-val iil-none' : 'iil-val';
-    return `<div class="iil-row"><span class="iil-label">${label}</span><span class="${valClass}">${val}</span></div>`;
+    return `<div class="iil-row"><span class="iil-label">${escapeHtml(label)}</span><span class="${valClass}">${val}</span></div>`;
   }
 
   function buildOverlay(img) {
@@ -89,8 +114,11 @@
     const dispW = img.width;
     const dispH = img.height;
 
-    let html = row('name:', filename);
-    html += row('alt:', hasAlt ? alt : 'none', !hasAlt);
+    const filenameStem = filename.includes('.') && !filename.startsWith('inline')
+      ? filename.slice(0, filename.lastIndexOf('.'))
+      : filename;
+    let html = `<div class="iil-row"><span class="iil-label">name:</span><span class="iil-val iil-copyable" data-copy="${escapeAttr(filenameStem)}">${escapeHtml(filename)}<span class="iil-copy-hint">click to copy</span></span></div>`;
+    html += row('alt:', hasAlt ? escapeHtml(alt) : 'none', !hasAlt);
     html += row('natural:', natW && natH ? `${natW} × ${natH} px` : '?');
     html += row('display:', `${dispW} × ${dispH} px`);
     html += row('weight:', '<span class="iil-loading">…</span>');
@@ -119,6 +147,20 @@
         sizeEl.textContent = src.startsWith('data:') ? 'inline' : '—';
       }
     }
+
+    // Click-to-copy on the name
+    div.querySelector('.iil-copyable')?.addEventListener('click', e => {
+      const text = e.currentTarget.dataset.copy;
+      navigator.clipboard.writeText(text).then(() => {
+        e.currentTarget.classList.add('iil-copied');
+        const hint = e.currentTarget.querySelector('.iil-copy-hint');
+        if (hint) hint.textContent = 'copied!';
+        setTimeout(() => {
+          e.currentTarget.classList.remove('iil-copied');
+          if (hint) hint.textContent = 'click to copy';
+        }, 1500);
+      });
+    });
 
     return div;
   }
