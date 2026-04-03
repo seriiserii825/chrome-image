@@ -3,9 +3,11 @@
   "name": "Image Inspector",
   "version": "1.0",
   "description": "Show image details (name, alt, dimensions, file size) near each image on the page",
-  "permissions": ["activeTab", "scripting"],
+  "permissions": ["activeTab", "scripting", "clipboardWrite"],
+  "background": {
+    "service_worker": "background.js"
+  },
   "action": {
-    "default_popup": "popup.html",
     "default_icon": {
       "16": "icons/icon16.png",
       "48": "icons/icon48.png",

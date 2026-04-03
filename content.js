@@ -150,16 +150,32 @@
 
     // Click-to-copy on the name
     div.querySelector('.iil-copyable')?.addEventListener('click', e => {
-      const text = e.currentTarget.dataset.copy;
-      navigator.clipboard.writeText(text).then(() => {
-        e.currentTarget.classList.add('iil-copied');
-        const hint = e.currentTarget.querySelector('.iil-copy-hint');
+      const el = e.currentTarget;
+      const text = el.dataset.copy;
+      const hint = el.querySelector('.iil-copy-hint');
+      const markCopied = () => {
+        el.classList.add('iil-copied');
         if (hint) hint.textContent = 'copied!';
         setTimeout(() => {
-          e.currentTarget.classList.remove('iil-copied');
+          el.classList.remove('iil-copied');
           if (hint) hint.textContent = 'click to copy';
         }, 1500);
-      });
+      };
+      const fallback = () => {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.cssText = 'position:fixed;opacity:0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        ta.remove();
+        markCopied();
+      };
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).then(markCopied).catch(fallback);
+      } else {
+        fallback();
+      }
     });
 
     return div;
